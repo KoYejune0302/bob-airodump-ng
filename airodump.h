@@ -8,8 +8,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#define MAX_NETWORKS 100
-
 // Radiotap header structure
 struct radiotap_header {
     uint8_t version;

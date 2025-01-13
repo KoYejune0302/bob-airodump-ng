@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
     time_t last_channel_change = time(NULL);
 
     while (1) {
-        // Change channel every 100ms
+        // Change channel every 1000ms
         if (time(NULL) - last_channel_change >= 1) {
             set_channel(argv[1], current_channel);
             current_channel++;
