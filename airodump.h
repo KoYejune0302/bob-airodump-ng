@@ -89,7 +89,7 @@ int process_packet(const struct pcap_pkthdr *header, const u_char *packet);
 int find_signal_strength(const struct pcap_pkthdr *header, const u_char *packet);
 void find_bssid(const struct pcap_pkthdr *header, const u_char *packet, uint8_t *bssid);
 uint8_t *find_wireless_static(const struct pcap_pkthdr *header, const u_char *packet, int *ssid_length);
-uint8_t find_wireless_dynamic(const struct pcap_pkthdr *header, const u_char *packet);
+uint8_t find_channel(const struct pcap_pkthdr *header, const u_char *packet);
 const char *find_encryption_type(const struct pcap_pkthdr *header, const u_char *packet);
 void printData(struct airodump_beacon *wlan_data, int start_num, struct airodump_probe *wlan_data1, int start_num2);
 void set_channel(char *interface, int channel);

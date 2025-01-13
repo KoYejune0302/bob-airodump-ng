@@ -40,10 +40,11 @@ uint8_t find_channel(const struct pcap_pkthdr *header, const u_char *packet) {
     uint32_t present = *(uint32_t *)(packet + offset);
     offset += 4;
 
-    // Parse Radiotap header to find Channel field
+    // Check if the channel field is present
     if (present & (1 << 3)) { // Check for Channel field
-        offset += 1; // Skip flags field
-        return packet[offset]; // Channel number
+        // The channel field is 2 bytes: flags (1 byte) and channel (1 byte)
+        // Typically, the channel number is in the first byte after flags
+        return packet[offset + 1]; // Channel number
     }
     return 0; // Default value if not found
 }
@@ -73,9 +74,16 @@ const char *find_encryption_type(const struct pcap_pkthdr *header, const u_char 
     struct radiotap_header *radio_hdr = (struct radiotap_header *)packet;
     int offset = radio_hdr->len;
 
-    struct wireless_management *wl_mg = (struct wireless_management *)(packet + offset + 24);
-    uint8_t *ptr = (uint8_t *)wl_mg;
-    ptr += sizeof(struct wireless_management);
+    // Pointer to the start of the 802.11 header
+    u_char *ieee80211 = (u_char *)(packet + offset);
+
+    // Skip frame control (2), duration (2), dest addr (6), src addr (6), BSSID (6), seq ctrl (2)
+    int mac_hdr_len = 2 + 2 + 6 + 6 + 6 + 2;
+    u_char *mgmt = ieee80211 + mac_hdr_len;
+
+    // Now, mgmt points to the management frame body
+    // Parse tag fields
+    u_char *ptr = mgmt;
 
     while (ptr < packet + header->caplen) {
         uint8_t tag_number = *ptr++;
@@ -159,7 +167,7 @@ int main(int argc, char *argv[]) {
     time_t last_channel_change = time(NULL);
 
     while (1) {
-        // Change channel every 1000ms
+        // Change channel every 1 second
         if (time(NULL) - last_channel_change >= 1) {
             set_channel(argv[1], current_channel);
             current_channel++;
@@ -202,7 +210,10 @@ int main(int argc, char *argv[]) {
                     wlan_data[i].PWR = pwr;
                     wlan_data[i].BEACONS++;
                     wlan_data[i].CH = channel;
-                    wlan_data[i].ENC = enc;
+                    // Update encryption type if necessary
+                    if (wlan_data[i].ENC != enc) {
+                        wlan_data[i].ENC = enc;
+                    }
                     if (wlan_data[i].ESSID) free(wlan_data[i].ESSID);
                     wlan_data[i].ESSID = (uint8_t *)malloc(ssid_length + 1);
                     memcpy(wlan_data[i].ESSID, essid, ssid_length);
