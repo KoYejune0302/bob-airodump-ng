@@ -2,34 +2,96 @@
 #define AIRODUMP_H
 
 #include <pcap.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
-#define UNUSED(x) (void)(x)
+#define MAX_NETWORKS 100
 
-// Define the 802.11 header structure
+// Radiotap header structure
+struct radiotap_header {
+    uint8_t version;
+    uint8_t pad;
+    uint16_t len;
+    uint32_t present;
+};
+
+// Beacon frame structure
+struct beacon_frame {
+    uint8_t frame_control[2];
+    uint8_t duration[2];
+    uint8_t destination_address[6];
+    uint8_t source_address[6];
+    uint8_t bss_id[6];
+    uint16_t fragment_sequence_number;
+};
+
+// Probe frame structure
+struct probe_frame {
+    uint8_t frame_control[2];
+    uint8_t duration[2];
+    uint8_t destination_address[6];
+    uint8_t source_address[6];
+    uint8_t bss_id[6];
+    uint16_t fragment_sequence_number;
+};
+
+// SSID structure
 typedef struct {
-    uint8_t  frame_control;
-    uint8_t  duration;
-    uint8_t  addr1[6];
-    uint8_t  addr2[6];
-    uint8_t  addr3[6];
-    uint16_t seq_ctrl;
-} __attribute__((packed)) ieee80211_header_t;
+    uint8_t tag_number;
+    uint8_t tag_length;
+    uint8_t ssid[];
+} Tag_SSID;
 
-// Define the Beacon frame information structure
+// Supported rates structure
 typedef struct {
-    uint8_t  mac[6];
-    char     essid[32];
-    int      beacons;
-    int      data;
-    char     enc[16];
-    int      pwr;
-} network_info_t;
+    uint8_t tag_number;
+    uint8_t tag_length;
+    uint8_t rates[];
+} Tag_Supported_Rates;
 
-void process_packet(u_char *args, const struct pcap_pkthdr *header, const u_char *packet);
-void print_networks(network_info_t *networks, int count);
-int parse_radiotap_header(const u_char *packet, int *pwr);
-void parse_beacon_frame(const u_char *packet, network_info_t *network);
+// DS parameter structure
+typedef struct {
+    uint8_t tag_number;
+    uint8_t tag_length;
+    uint8_t channel;
+} Tag_DS;
+
+// Wireless management structure
+struct wireless_management {
+    uint8_t fixed_parameter[12];
+    Tag_SSID SSID;
+    Tag_Supported_Rates Rates;
+    Tag_DS DS;
+};
+
+// Beacon data structure
+struct airodump_beacon {
+    uint8_t BSSID[6];
+    int PWR;
+    int BEACONS;
+    uint8_t CH;
+    uint8_t *ESSID;
+};
+
+// Probe data structure
+struct airodump_probe {
+    uint8_t BSSID[6];
+    uint8_t STATION[6];
+    int PWR;
+    int Frames;
+    uint8_t *PROBE;
+};
+
+// Function prototypes
+int process_packet(const struct pcap_pkthdr *header, const u_char *packet);
+int find_signal_strength(const struct pcap_pkthdr *header, const u_char *packet);
+void find_bssid(const struct pcap_pkthdr *header, const u_char *packet, uint8_t *bssid);
+uint8_t *find_wireless_static(const struct pcap_pkthdr *header, const u_char *packet, int *ssid_length);
+uint8_t find_wireless_dynamic(const struct pcap_pkthdr *header, const u_char *packet);
+void printData(struct airodump_beacon *wlan_data, int start_num, struct airodump_probe *wlan_data1, int start_num2);
+void set_channel(char *interface, int channel);
 
 #endif // AIRODUMP_H
